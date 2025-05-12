@@ -9,8 +9,10 @@ import com.example.demo.blockchain.Chain;
 import com.example.demo.blockchain.Block;
 import com.example.demo.blockchain.Transaction;
 
+import java.net.MalformedURLException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -61,5 +63,19 @@ public class MainController {
     @GetMapping("/chain")
     public Chain GetChain() {
         return this.chain;
+    }
+
+    @PostMapping("/nodes/register")
+    public String RegisterNode(@RequestBody List<String> nodeAddresses) throws MalformedURLException {
+        for (String nodeAddress : nodeAddresses) {
+            this.chain.RegisterNode(nodeAddress);
+        }
+
+        return "Nodes registered";
+    }
+
+    @GetMapping("/nodes/resolve")
+    public String ResolveChainConflicts() {
+        return "bob";
     }
 }

@@ -2,6 +2,8 @@ package com.example.demo.blockchain;
 
 import java.beans.XMLEncoder;
 import java.io.ByteArrayOutputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -11,9 +13,12 @@ public class Chain {
     protected List<Block> blocks;
     protected List<Transaction> currentTransactions;
 
+    protected Map<String, Integer> nodes;
+
     public Chain() throws NoSuchAlgorithmException {
         this.blocks = new ArrayList<>();
         this.currentTransactions = new ArrayList<>();
+        this.nodes = new HashMap<>();
 
         this.AddBlock(100, "1");
     }
@@ -24,6 +29,14 @@ public class Chain {
 
     public void setBlocks(List<Block> blocks) {
         this.blocks = blocks;
+    }
+
+    public Map<String, Integer> getNodes() {
+        return nodes;
+    }
+
+    public void setNodes(Map<String, Integer> nodes) {
+        this.nodes = nodes;
     }
 
     public long AddTransaction(String sender, String recipient, double amount) {
@@ -82,6 +95,15 @@ public class Chain {
         byte[] hashBytes = digest.digest(encoderBytes.toByteArray());
 
         return this.bytesToHex(hashBytes);
+    }
+
+    public void RegisterNode(String address) throws MalformedURLException {
+        URL url = new URL(address);
+        String host = url.getHost();
+
+        if (!this.nodes.containsKey(host)) {
+            this.nodes.put(host, 0);
+        }
     }
 
     private long getUnixCurrentTimestamp() {
