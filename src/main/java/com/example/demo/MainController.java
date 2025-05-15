@@ -9,6 +9,7 @@ import com.example.demo.blockchain.Chain;
 import com.example.demo.blockchain.Block;
 import com.example.demo.blockchain.Transaction;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -74,8 +75,15 @@ public class MainController {
         return "Nodes registered";
     }
 
-    @GetMapping("/nodes/resolve")
-    public String ResolveChainConflicts() {
-        return "bob";
+    @GetMapping("/consensus")
+    public ConsensusResponse ResolveChainConflicts() throws IOException, NoSuchAlgorithmException {
+        boolean replaced = chain.ResolveConflicts();
+        String message = "our chain was replaced";
+
+        if (!replaced) {
+            message = "our chain is authoritative";
+        }
+
+        return new ConsensusResponse(message, this.chain);
     }
 }

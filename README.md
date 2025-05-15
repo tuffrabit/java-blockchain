@@ -14,6 +14,5 @@ openjdk 24.0.1
 `./mvnw spring-boot:run`
 
 ## TODO
-- Add consensus
 - Add tests
 - Add example request collection

@@ -1,18 +1,22 @@
 package com.example.demo.blockchain;
 
 import java.beans.XMLEncoder;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Chain {
     protected List<Block> blocks;
     protected List<Transaction> currentTransactions;
-
     protected Map<String, Integer> nodes;
 
     public Chain() throws NoSuchAlgorithmException {
@@ -103,6 +107,86 @@ public class Chain {
 
         if (!this.nodes.containsKey(host)) {
             this.nodes.put(host, 0);
+        }
+    }
+
+    public boolean ValidateChain(Chain chain) throws NoSuchAlgorithmException {
+        Block lastBlock = chain.blocks.getFirst();
+        int currentIndex = 1;
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+        while (currentIndex < chain.blocks.size()) {
+            Block block = chain.blocks.get(currentIndex);
+
+            if (!block.getPreviousHash().equals(this.GenerateHash(lastBlock))) {
+                return false;
+            }
+
+            if (!this.validateProof(lastBlock.getProof(), this.longToBytes(block.getProof()), digest)) {
+                return false;
+            }
+
+            lastBlock = block;
+            currentIndex = currentIndex + 1;
+        }
+
+        return true;
+    }
+
+    public boolean ResolveConflicts() throws IOException, NoSuchAlgorithmException {
+        int maxSize = this.blocks.size();
+        Chain newChain = null;
+
+        for (String nodeAddress : this.nodes.keySet()) {
+            Chain remoteChain = this.getChainDataFromNode(nodeAddress);
+
+            if (remoteChain == null) {
+                continue;
+            }
+
+            if (remoteChain.blocks.size() <= maxSize) {
+                continue;
+            }
+
+            if (!this.ValidateChain(remoteChain)) {
+                continue;
+            }
+
+            maxSize = remoteChain.blocks.size();
+            newChain = remoteChain;
+        }
+
+        if (newChain != null) {
+            this.blocks = newChain.blocks;
+            return true;
+        }
+
+        return false;
+    }
+
+    private Chain getChainDataFromNode(String nodeAddress) {
+        try {
+            URL url = new URL(String.format("http://%s/chain", nodeAddress));
+            HttpURLConnection con = (HttpURLConnection)url.openConnection();
+            con.setRequestMethod("GET");
+
+            int status = con.getResponseCode();
+            if (status != 200) {
+                return null;
+            }
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            StringBuffer content = new StringBuffer();
+            while ((inputLine = in.readLine()) != null) {
+                content.append(inputLine);
+            }
+            in.close();
+
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(content.toString(), Chain.class);
+        } catch (Exception e) {
+            return null;
         }
     }
 
